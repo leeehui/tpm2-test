@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5.1)
 project(TPM2_0_TSS_TEST)
 
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_BUILD_TYPE Debug)
 add_definitions(-DMAXLOGLEVEL=6)
 
 
