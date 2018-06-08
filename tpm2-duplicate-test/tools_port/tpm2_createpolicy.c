@@ -55,7 +55,8 @@ void rc_parse(TSS2_RC rc){
         LOG_INFO("RC in higher level");
         return;
     }
-    for(int i=0; i<12; i++)
+    int i;
+    for(i=0; i<12; i++)
     {
         rc_ser[i] = (UINT8)((rc>>i) & 0x1);
     }
