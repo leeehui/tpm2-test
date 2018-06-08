@@ -5,6 +5,7 @@
 #include "test.h"
 #include "test-options.h"
 #include "context-util.h"
+TSS2_RC set_cmd_locality( TSS2_SYS_CONTEXT *sapi_context, UINT8 locality );
 
 /**
  * This program is a template for integration tests (ones that use the TCTI
@@ -32,6 +33,7 @@ main (int   argc,
     sapi_context = sapi_init_from_opts (&opts);
     if (sapi_context == NULL)
         exit (1);
+    set_cmd_locality(sapi_context, 0);
     rc = Tss2_Sys_Startup(sapi_context, TPM2_SU_CLEAR);
     if (rc != TSS2_RC_SUCCESS && rc != TPM2_RC_INITIALIZE) {
         LOG_ERROR("TPM Startup FAILED! Response Code : 0x%x", rc);
