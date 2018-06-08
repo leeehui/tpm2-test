@@ -123,6 +123,9 @@ test_invoke (TSS2_SYS_CONTEXT *sapi_context)
     TPM2B_SENSITIVE_DATA unseal_data = TPM2B_TYPE_INIT(TPM2B_SENSITIVE_DATA, buffer);
 	LOG_INFO ("test invoke.");
 
+    //set_cmd_locality(sapi_context, 1);
+#if 1
+
     /* create EK(endorsement key) */
     res = create_ek(sapi_context, "rsa", &ek_ctx);
     if (!res) {
@@ -188,6 +191,7 @@ test_invoke (TSS2_SYS_CONTEXT *sapi_context)
         LOG_INFO ("unseal ok");
     }
     LOGBLOB_INFO(unseal_data.buffer, unseal_data.size, "Secret:");
+#endif
 
 	return res;	
 }
