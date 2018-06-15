@@ -53,6 +53,7 @@
 #include "lib/log.h"
 #include "tpm2_create.h"
 
+void rc_parse(TSS2_RC rc);
 
 
 int setup_alg(tpm_create_ctx *ctx)
@@ -158,6 +159,7 @@ int __create(TSS2_SYS_CONTEXT *sapi_context, tpm_create_ctx *ctx)
                            &creationData, &creationHash, &creationTicket, &sessionsDataOut));
     if(rval != TPM2_RC_SUCCESS) {
         LOG_PERR(Tss2_Sys_Create, rval);
+        rc_parse(rval);
         return -2;
     }
 
@@ -233,10 +235,10 @@ static bool set_ctx_key_alg(tpm_create_ctx *ctx, char *value) {
 
 static bool set_ctx_default_sensitive_data(tpm_create_ctx *ctx) {
     int i;
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < 10; i++) {
         ctx->in_sensitive.sensitive.data.buffer[i] = i;
     }
-    ctx->in_sensitive.sensitive.data.size = 8;
+    ctx->in_sensitive.sensitive.data.size = 10;
     ctx->flags.I = 1;
     return true;
 }
@@ -290,7 +292,9 @@ int create(TSS2_SYS_CONTEXT *sapi_context,
             returnVal = __create(sapi_context, ctx);
 
         if(returnVal)
+        {
             return 1;
+        }
     } else {
         return 1;
     }

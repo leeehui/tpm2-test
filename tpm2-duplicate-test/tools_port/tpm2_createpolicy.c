@@ -46,55 +46,7 @@
 #include "lib/log.h"
 #include "tpm2_createpolicy.h"
 
-//see Figure27 on page 232 of "TPM library specification - part 1"
-void rc_parse(TSS2_RC rc){
-    UINT8 rc_ser[12];
-    LOG_INFO("RC=0x%0x", rc);
-    if( (rc & 0xfffff000) != 0x0 )
-    {
-        LOG_INFO("RC in higher level");
-        return;
-    }
-    int i;
-    for(i=0; i<12; i++)
-    {
-        rc_ser[i] = (UINT8)((rc>>i) & 0x1);
-    }
-    if( (rc_ser[8] | rc_ser[7]) == 0x0 )
-    {
-        LOG_INFO("TPM 1.2 RC");
-        return;
-    }
-    if( rc_ser[7] ==  0x0)//bit 7
-    {
-        LOG_INFO("Format 0 rc");
-        if( rc_ser[10] )
-        {
-            LOG_INFO("Vendor defined");
-            return;
-        }
-        if( rc_ser[11] )
-        {
-            LOG_INFO("Warning code: 0x%x", rc & 0x7f);
-            return;
-        }
-        LOG_INFO("Error code: 0x%x", rc & 0x7f);
-        return;
-    }
-    LOG_INFO("Format 1 rc");
-    if( rc_ser[6] )
-    {
-        LOG_INFO("Parameter(0x%x) error: 0x%x", (rc>>8)&0xf, rc&0x3f );
-        return;
-    }
-    if( rc_ser[11] ) {
-        LOG_INFO("Session(0x%x) error: 0x%x", (rc >> 8) & 0x7, rc & 0x3f);
-        return;
-    }
-    LOG_INFO("Handle(0x%x) error: 0x%x", (rc >> 8) & 0x7, rc & 0x3f);
-    return;
-}
-
+void rc_parse(TSS2_RC rc);
 
 static bool parse_policy_type_specific_command(TSS2_SYS_CONTEXT *sapi_context, createak_context *ak_ctx, create_policy_ctx *pctx) {
 

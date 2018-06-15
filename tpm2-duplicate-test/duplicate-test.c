@@ -92,6 +92,76 @@ static create_policy_ctx pctx = {
     },
 };
 
+void TestDictionaryAttackLockReset(TSS2_SYS_CONTEXT *sapi_context)
+{
+    UINT32 rval;
+    TSS2L_SYS_AUTH_RESPONSE sessionsDataOut;
+
+    TSS2L_SYS_AUTH_COMMAND sessionsData = { .count = 1, .auths = {{
+        .sessionHandle = TPM2_RS_PW,
+        .sessionAttributes = 0,
+        .nonce={.size=0},
+        .hmac={.size=0}}}};
+
+    LOG_INFO("DICTIONARY ATTACK LOCK RESET TEST  :" );
+
+    rval = Tss2_Sys_DictionaryAttackLockReset ( sapi_context, TPM2_RH_LOCKOUT, &sessionsData, &sessionsDataOut );
+    if(rval != TPM2_RC_SUCCESS)
+    {
+        LOG_ERROR("Tss2_Sys_DictionaryAttackLockReset failed. RC: 0x%x", rval);
+    }
+}
+
+//see Figure27 on page 232 of "TPM library specification - part 1"
+void rc_parse(TSS2_RC rc){
+    UINT8 rc_ser[12];
+    LOG_INFO("RC=0x%0x", rc);
+    if( (rc & 0xfffff000) != 0x0 )
+    {
+        LOG_INFO("RC in higher level");
+        return;
+    }
+    int i;
+    for(i=0; i<12; i++)
+    {
+        rc_ser[i] = (UINT8)((rc>>i) & 0x1);
+    }
+    if( (rc_ser[8] | rc_ser[7]) == 0x0 )
+    {
+        LOG_INFO("TPM 1.2 RC");
+        return;
+    }
+    if( rc_ser[7] ==  0x0)//bit 7
+    {
+        LOG_INFO("Format 0 rc");
+        if( rc_ser[10] )
+        {
+            LOG_INFO("Vendor defined");
+            return;
+        }
+        if( rc_ser[11] )
+        {
+            LOG_INFO("Warning code: 0x%x", rc & 0x7f);
+            return;
+        }
+        LOG_INFO("Error code: 0x%x", rc & 0x7f);
+        return;
+    }
+    LOG_INFO("Format 1 rc");
+    if( rc_ser[6] )
+    {
+        LOG_INFO("Parameter(0x%x) error: 0x%x", (rc>>8)&0xf, rc&0x3f );
+        return;
+    }
+    if( rc_ser[11] ) {
+        LOG_INFO("Session(0x%x) error: 0x%x", (rc >> 8) & 0x7, rc & 0x3f);
+        return;
+    }
+    LOG_INFO("Handle(0x%x) error: 0x%x", (rc >> 8) & 0x7, rc & 0x3f);
+    return;
+}
+
+
 
 TSS2_RC set_cmd_locality( TSS2_SYS_CONTEXT *sapi_context, UINT8 locality )
 {
@@ -122,7 +192,7 @@ test_invoke (TSS2_SYS_CONTEXT *sapi_context)
     int res = 0;
     TPM2B_SENSITIVE_DATA unseal_data = TPM2B_TYPE_INIT(TPM2B_SENSITIVE_DATA, buffer);
 	LOG_INFO ("test invoke.");
-
+    TestDictionaryAttackLockReset(sapi_context);
     //set_cmd_locality(sapi_context, 1);
 #if 1
 
