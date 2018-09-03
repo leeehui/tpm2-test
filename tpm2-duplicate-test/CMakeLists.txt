@@ -58,6 +58,7 @@ LINK_LIBRARIES(
 		libssl.so
 		libtcti-device.so
         libtcti-socket.so
+        liburiparser.so
 )
 
 
@@ -68,6 +69,7 @@ INCLUDE_DIRECTORIES(
 		./tools_port
 		./tools
 	    /usr/local/include
+        /usr/lib64
 )
 
 LINK_DIRECTORIES(
