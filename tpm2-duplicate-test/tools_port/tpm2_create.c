@@ -235,10 +235,10 @@ static bool set_ctx_key_alg(tpm_create_ctx *ctx, char *value) {
 
 static bool set_ctx_default_sensitive_data(tpm_create_ctx *ctx) {
     int i;
-    for (i = 0; i < 10; i++) {
+    for (i = 0; i < 32; i++) {
         ctx->in_sensitive.sensitive.data.buffer[i] = i;
     }
-    ctx->in_sensitive.sensitive.data.size = 10;
+    ctx->in_sensitive.sensitive.data.size = 32;
     ctx->flags.I = 1;
     return true;
 }

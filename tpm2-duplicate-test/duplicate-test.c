@@ -184,6 +184,26 @@ TSS2_RC set_cmd_locality( TSS2_SYS_CONTEXT *sapi_context, UINT8 locality )
 }
 
 
+TSS2_RC skm_delete_key_slot( TSS2_SYS_CONTEXT *sapi_context, UINT32 index )
+{
+    TSS2_RC rval = TSS2_RC_SUCCESS;
+    TSS2_TCTI_CONTEXT *tcti_context;
+
+     rval = Tss2_Sys_GetTctiContext(sapi_context, &tcti_context);
+    if (rval != TPM2_RC_SUCCESS) {
+        LOG_INFO("get tcti context failed: 0x%x", rval);
+        return false;
+    }
+
+    rval = Tss2_Tcti_SkmDeleteKeySlot(tcti_context, index);
+    if (rval != TPM2_RC_SUCCESS) {
+        LOG_INFO("Tss2_Tcti_SkmDeleteKeySlot failed: 0x%x", rval);
+        return false;
+    }
+
+    return rval;
+}
+
 
 
 int
@@ -192,6 +212,7 @@ test_invoke (TSS2_SYS_CONTEXT *sapi_context)
     int res = 0;
     TPM2B_SENSITIVE_DATA unseal_data = TPM2B_TYPE_INIT(TPM2B_SENSITIVE_DATA, buffer);
 	LOG_INFO ("test invoke.");
+    skm_delete_key_slot(sapi_context, 0);
     TestDictionaryAttackLockReset(sapi_context);
     //set_cmd_locality(sapi_context, 1);
 #if 1
@@ -248,6 +269,41 @@ test_invoke (TSS2_SYS_CONTEXT *sapi_context)
     if (!res) {
         LOG_INFO ("do_duplicate_import ok");
     }
+
+    res = start_policy(sapi_context, TPM2_CC_Unseal, &ak_ctx, &pctx);
+    if (!res) {
+        LOG_INFO ("unseal policy started");
+    }
+
+    set_cmd_locality(sapi_context, 3);
+
+    res = unseal(sapi_context,&sk_ctx, &pctx, &unseal_data);
+    if (!res) {
+        LOG_INFO ("unseal ok");
+    }
+    LOGBLOB_INFO(unseal_data.buffer, unseal_data.size, "Secret:");
+
+    set_cmd_locality(sapi_context, 0);
+
+    res = start_policy(sapi_context, TPM2_CC_Unseal, &ak_ctx, &pctx);
+    if (!res) {
+        LOG_INFO ("unseal policy started");
+    }
+
+    set_cmd_locality(sapi_context, 3);
+
+    res = unseal(sapi_context,&sk_ctx, &pctx, &unseal_data);
+    if (!res) {
+        LOG_INFO ("unseal ok");
+    }
+    LOGBLOB_INFO(unseal_data.buffer, unseal_data.size, "Secret:");
+
+    //need locality = 3
+    skm_delete_key_slot(sapi_context, 0);
+
+    set_cmd_locality(sapi_context, 0);
+
+
 
     res = start_policy(sapi_context, TPM2_CC_Unseal, &ak_ctx, &pctx);
     if (!res) {
