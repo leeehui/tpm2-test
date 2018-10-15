@@ -5,10 +5,11 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_BUILD_TYPE Debug)
 add_definitions(-DMAXLOGLEVEL=6)
 add_definitions(-DOSSL)
+add_definitions(-DLOGDEFAULT=LOGLEVEL_INFO)
+add_definitions(-DTEST_SESSION)
 
 
 set(SOURCE_FILES
-    integration/duplicate.c
     integration/main-esapi.c
     integration/sapi-test-options.c
     integration/sapi-context-util.c
@@ -59,6 +60,6 @@ LINK_LIBRARIES(
     libtss2-tcti-mssim.so
 )
 
-add_executable(duplicate ${SOURCE_FILES})
-target_link_libraries(duplicate)
+add_executable(duplicate ${SOURCE_FILES} integration/duplicate.c)
+add_executable(test-context ${SOURCE_FILES} integration/esys-save-and-load-context.int.c)
 
