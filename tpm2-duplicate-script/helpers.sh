@@ -324,7 +324,7 @@ function shut_down() {
     tpm2_sim_pid=""
 
     echo "Removing contents of sim dir: $tpm2_test_cwd"
-    rm -rf $tpm2_test_cwd/* 2>/dev/null
+    #rm -rf $tpm2_test_cwd/* 2>/dev/null
 
     if [ $fail -ne 0 ]; then
         exit 1

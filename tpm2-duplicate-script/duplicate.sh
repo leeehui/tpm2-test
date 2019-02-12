@@ -1,7 +1,6 @@
 #!/bin/bash
 #;**********************************************************************;
 #
-# Copyright (c) 2017, Alibaba Group
 # Copyright (c) 2018, Intel Corporation
 # All rights reserved.
 #
@@ -73,7 +72,7 @@ tpm2_createprimary -Q -a o -g sha256 -G rsa -o dst.ctx
 
 echo "creating policy for keyedhash key which contains kwk"
 
-echo "  start authsession for trial policy session, Do NOT use '-a' which is used in real authorization"
+echo "  start authsession for trial policy session p1.session, Do NOT use '-a' which is used in real authorization"
 tpm2_startauthsession -Q -g sha256 -S p1.session
 
 echo "  bind trial policy to TPM_CC_Duplicate, now tpm2_policyget digest is not available, acctualy we just need to get policy digest"
@@ -82,7 +81,7 @@ tpm2_policycommandcode -Q -S p1.session -o p1.data $TPM_CC_Duplicate
 echo "  load ak"
 tpm2_load -Q -C ek.ctx -u ak.pub -r ak.priv -n ak.name -o ak.ctx
 
-echo "  sign the trial policy"
+echo "  sign the trial policy p1"
 tpm2_sign -Q  -c ak.ctx -G sha256 -m p1.data -s p1.sig
 
 echo "  verify the trial policy signature"
@@ -96,22 +95,56 @@ tpm2_flushcontext -Q -c ak.ctx -S p1.session
 
 echo "12345678" > kwk.data
 
-echo "  create keyedhash key containing fake kwk"
+echo "create keyedhash key containing fake kwk"
 tpm2_create -Q -C src.ctx -L p1.data.auth -g sha256 -u dupkey.pub -r dupkey.priv -A userwithauth -I kwk.data
 
-echo "  start authsession"
+echo "duplicate keyedhash key"
+
+echo "  load keyedhash key"
+tpm2_load -Q -C src.ctx -u dupkey.pub -r dupkey.priv -n dupkey.name -o dupkey.ctx
+
+echo "  start authsession p1.session"
 tpm2_startauthsession -Q -g sha256 -S p2.session
 
+echo "  read dst key name"
+tpm2_readpublic -Q -c dst.ctx -n dst.name
+#dst_name=`yaml_get_kv dst.log \"name\"`
+#echo "  $dst_name"
+
+echo "  select duplicate destination"
+tpm2_policyduplicationselect -Q -i -S p2.session -n dupkey.name -p dst.name
+
+#Note: policyduplicationselect do NOT allow any command code exists in policy sessioin
+#      so tpm2_policycommandcode locates after the tpm2_policyduplicationselect
 echo "  bind trial policy to TPM_CC_Duplicate"
 tpm2_policycommandcode -Q -S p2.session -o p2.data $TPM_CC_Duplicate
 
-echo "  read dst key name"
-tpm2_readpublic -c dst.ctx  > dst.log
+echo "  flush authsession p2.session"
+tpm2_flushcontext -Q -c dupkey.ctx -S p2.session
 
-dst_name=`yaml_get_kv dst.log \"name\"`
-echo "  $dst_name"
+rm ak.name ak.ctx
+echo "  load ak"
+tpm2_load -Q -C ek.ctx -u ak.pub -r ak.priv -n ak.name -o ak.ctx
+
+echo "  sign the trial policy p2"
+tpm2_sign -Q  -c ak.ctx -G sha256 -m p2.data -s p2.sig
+
+echo "  verify the trial policy signature"
+tpm2_verifysignature -Q -c ak.ctx -G sha256 -m p2.data -s p2.sig -t p2.tk
+
+echo "  flush ak"
+tpm2_flushcontext -Q -c ak.ctx
+
+echo "  start real authsession p3.session"
+tpm2_startauthsession -Q -a -g sha256 -S p3.session
 
 echo "  select duplicate destination"
-#tpm2_policy
+tpm2_policyduplicationselect -Q -i -S p3.session -n dupkey.name -p dst.name
+
+echo "  bind trial policy to TPM_CC_Duplicate"
+tpm2_policycommandcode -Q -S p3.session -o p3.data $TPM_CC_Duplicate
+
+echo "  bind policy to ak"
+tpm2_policyauthorize -Q -S p3.session -f p3.data -o p3.data.auth -n ak.name -t p2.tk
 
 echo "end."
