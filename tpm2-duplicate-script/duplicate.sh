@@ -107,7 +107,7 @@ echo "  start authsession p1.session"
 tpm2_startauthsession -Q -g sha256 -S p2.session
 
 echo "  read dst key name"
-tpm2_readpublic -Q -c dst.ctx -n dst.name
+tpm2_readpublic -Q -c dst.ctx -n dst.name #> dst.log
 #dst_name=`yaml_get_kv dst.log \"name\"`
 #echo "  $dst_name"
 
@@ -115,6 +115,7 @@ echo "  select duplicate destination"
 tpm2_policyduplicationselect -Q -i -S p2.session -n dupkey.name -p dst.name
 
 #Note: policyduplicationselect do NOT allow any command code exists in policy sessioin
+#      according to command spec. this command will set policySession->commandCode to TPM_CC_Duplicate
 #      so tpm2_policycommandcode locates after the tpm2_policyduplicationselect
 echo "  bind trial policy to TPM_CC_Duplicate"
 tpm2_policycommandcode -Q -S p2.session -o p2.data $TPM_CC_Duplicate
@@ -146,5 +147,8 @@ tpm2_policycommandcode -Q -S p3.session -o p3.data $TPM_CC_Duplicate
 
 echo "  bind policy to ak"
 tpm2_policyauthorize -Q -S p3.session -f p3.data -o p3.data.auth -n ak.name -t p2.tk
+
+echo "  do duplication"
+tpm2_duplicate -C dst.ctx -c dupkey.ctx -p session:p3.session -K encryption.out -d s.duplicate -s seed.out
 
 echo "end."
